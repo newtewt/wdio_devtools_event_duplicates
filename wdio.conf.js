@@ -59,9 +59,9 @@ exports.config = {
         maxInstances: 5,
         //
         browserName: 'chrome',
-        // 'goog:chromeOptions': {
-        //     args: ['--headless', '--disable-gpu']
-        //   },
+        'goog:chromeOptions': {
+            args: ['--headless', '--disable-gpu']
+          },
         acceptInsecureCerts: true
         // If outputDir is provided WebdriverIO can capture driver session logs
         // it is possible to configure which logTypes to include/exclude.
@@ -193,9 +193,17 @@ exports.config = {
     before: async (capabilities, specs) =>  {
         await browser.url('/');
         await browser.cdp('Log', 'enable');
+        await browser.cdp('Runtime', 'enable');
+        const logTypes = ['error', 'warning', 'debug'];
+        browser.on('Runtime.consoleAPICalled', (data) => {
+            if (data) {
+              const logEntry = `[${data.type}] log Event : ${JSON.stringify(data.args)}\n`;
+              fs.appendFileSync('./log.txt', logEntry);
+            }
+          });
         browser.on('Log.entryAdded', (params) => {
           const entry = params.entry;
-          const logEntry = `[${entry.level}]: ${entry.source} ${entry.text} url: ${entry.url} at ${entry.timestamp}\n`;
+          const logEntry = `${entry.timestamp} [${entry.level}]: ${entry.source} ${entry.text} url: ${entry.url}\n`;
           fs.appendFileSync('./log.txt', logEntry);
         });
     },
